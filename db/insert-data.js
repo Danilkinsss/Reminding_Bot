@@ -1,57 +1,48 @@
 // node insert-data.js
 //
 //
+function insertData(objsArr, dbName, colName) {
+  const { MongoClient } = require('mongodb')
 
-const { MongoClient } = require('mongodb')
+  require('dotenv').config()
+  const { MONGODB } = process.env
+  // Replace the following with your Atlas connection string
+  const uri = MONGODB
 
-require('dotenv').config()
-const { MONGODB } = process.env
-// Replace the following with your Atlas connection string
-const uri = MONGODB
+  const client = new MongoClient(uri)
 
-const client = new MongoClient(uri)
+  async function run() {
+    try {
+      // Connect to the Atlas cluster
+      await client.connect()
 
-async function run() {
-  try {
-    // Connect to the Atlas cluster
-    await client.connect()
+      // Get the database and collection on which to run the operation
+      const db = client.db(dbName)
+      const col = db.collection(colName)
 
-    // Get the database and collection on which to run the operation
-    const db = client.db('testing')
-    const col = db.collection('people')
+      // Create new documents
+      const collectionDocument = [...objsArr]
 
-    // Create new documents
-    const peopleDocuments = [
-      {
-        name: { first: 'Alan', last: 'Turing' },
-        birth: new Date(1912, 5, 23), // May 23, 1912
-        death: new Date(1954, 5, 7), // May 7, 1954
-        contribs: ['Turing machine', 'Turing test', 'Turingery'],
-        views: 1250000,
-      },
-      {
-        name: { first: 'Grace', last: 'Hopper' },
-        birth: new Date(1906, 12, 9), // Dec 9, 1906
-        death: new Date(1992, 1, 1), // Jan 1, 1992
-        contribs: ['Mark I', 'UNIVAC', 'COBOL'],
-        views: 3860000,
-      },
-    ]
+      // Insert the documents into the specified collection
+      const p = await col.insertMany(collectionDocument)
 
-    // Insert the documents into the specified collection
-    const p = await col.insertMany(peopleDocuments)
+      // Find the document
+      //TODO: check if needed ↓↓↓
+      const filter = { 'message.from.username': 'danilkinsss' }
+      const document = await col.findOne(filter)
 
-    // Find the document
-    const filter = { 'name.last': 'Turing' }
-    const document = await col.findOne(filter)
-
-    // Print results
-    console.log('Document found:\n' + JSON.stringify(document))
-  } catch (err) {
-    console.log(err.stack)
-  } finally {
-    await client.close()
+      // Print results
+      console.log('Document found:\n' + JSON.stringify(document))
+    } catch (err) {
+      console.log(err.stack)
+    } finally {
+      await client.close()
+    }
   }
+
+  run().catch(console.dir)
 }
 
-run().catch(console.dir)
+module.exports = {
+  insertData,
+}
