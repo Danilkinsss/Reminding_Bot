@@ -1,7 +1,7 @@
 const { handleMessage } = require('./lib/telegram.js')
 
-async function handler(req, method) {
-  const { body } = req
+async function handler(body) {
+  console.log('-------------------In handler')
   if (body) {
     const messageObj = body.message
     await handleMessage(messageObj)

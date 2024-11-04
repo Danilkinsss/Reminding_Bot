@@ -1,18 +1,20 @@
-const { axiosInstance } = require('./axios')
+const { axiosPost } = require('./axios')
 
-function sendMessage(messageObj, messageText) {
-  return axiosInstance.get('sendMessage', {
+async function sendMessage(messageObj, messageText) {
+  console.log('------------------------In telegram sendMessage')
+  return await axiosPost('sendMessage', {
     chat_id: messageObj.chat.id,
     text: messageText,
   })
 }
 
-function handleMessage(messageObj) {
+async function handleMessage(messageObj) {
+  console.log('-----------------------In telegram handleMessage')
   const messageText = messageObj.text || ''
   if (messageText.charAt(0) === '/') {
-    sendMessage(messageObj, `Nice command:  ${messageText}`)
+    await sendMessage(messageObj, `Nice command:  ${messageText}`)
   } else {
-    sendMessage(messageObj, `Here is your message: ${messageText}`)
+    await sendMessage(messageObj, `Here is your message: ${messageText}`)
   }
   return messageObj
 }

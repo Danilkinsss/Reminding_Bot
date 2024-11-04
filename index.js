@@ -1,10 +1,14 @@
+// ngrok http 5000
+
 require('dotenv').config()
 const express = require('express')
 const axios = require('axios')
 
-// import { users, User } from './data.js'
-const { users, User, Message } = require('./data.js')
-const { insertData2 } = require('./db/insert-data2.js')
+// const { users, User, Message } = require('./data.js')
+const { insertData } = require('./db/insert-data.js')
+// TODO: not used
+const { handleMessage } = require('./controller/lib/telegram.js')
+const { handler } = require('./controller/index.js')
 
 const { TOKEN, SERVER_URL } = process.env
 const TELEGRAM_API = `https://api.telegram.org/bot${TOKEN}`
@@ -30,6 +34,9 @@ app.post(URI, async (req, res) => {
   console.log('\n-------------------\nMessage recieved📩\n-------------------')
   console.log(req.body)
 
+  //TODO: not used
+  // res = handler(req.body)
+
   const chatID = req.body.message.chat.id
 
   // handling message type and text
@@ -51,9 +58,10 @@ app.post(URI, async (req, res) => {
   }
 
   // addition to the db
-  insertData2([req.body], 'telegram', messageType)
+  insertData([req.body], 'telegram', messageType)
 
   // sending of the message (as a confirmation of successful receiving)
+
   console.log('\n-------------------\nMessage send🔝\n-------------------')
   switch (messageType) {
     case 'text':
@@ -120,17 +128,6 @@ app.post(URI, async (req, res) => {
   //     .catch((error) => console.log(error))
   // }
 
-  // addition to the local db in file
-  // user type (for no reason is here)
-  let newUser = new User(
-    req.body.message.from.id,
-    req.body.message.from.first_name,
-    req.body.message.from.username
-  )
-  if (!users.includes(req.body.message.from.id)) {
-    users.push(req.body.message.from.id)
-  }
-  console.log(users)
   return res.sendStatus(200)
 })
 
