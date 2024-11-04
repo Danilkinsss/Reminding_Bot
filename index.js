@@ -57,8 +57,10 @@ app.post(URI, async (req, res) => {
     text = req.body.message.caption
   }
 
-  // addition to the db
-  insertData([req.body], 'telegram', messageType)
+  // addition message to the db
+  if (messageType !== 'command') {
+    insertData([req.body], 'telegram', messageType)
+  }
 
   // sending of the message (as a confirmation of successful receiving)
 
@@ -95,14 +97,38 @@ app.post(URI, async (req, res) => {
         .catch((error) => console.log(error))
       break
     case 'command':
-      await axios
-        .post(`${TELEGRAM_API}/sendMessage`, {
-          chat_id: chatID,
-          text: `Thank you for your ${text} command, we are working on it(or not...)`,
-        })
-        .then((res) => console.log(res.data))
-        .catch((error) => console.log(error))
-      break
+      switch (text) {
+        case '/start':
+          await axios
+            .post(`${TELEGRAM_API}/sendMessage`, {
+              chat_id: chatID,
+              text: `Hello there!👋\nWelcome to the reminding bot!🤓\nSend me some message/photo/video, I will save them and then, with /get_reminder command, I will send you a random uploaded one.🤩🤩`,
+            })
+            .then((res) => console.log(res.data))
+            .catch((error) => console.log(error))
+          break
+
+        case '/help':
+          await axios
+            .post(`${TELEGRAM_API}/sendMessage`, {
+              chat_id: chatID,
+              text: `Here is the list of all commands:\n/start - check if the bot is active and get recieve a greeting\n/help - see all commands\n/get_reminder - get a random reminder`,
+            })
+            .then((res) => console.log(res.data))
+            .catch((error) => console.log(error))
+          break
+
+        default:
+          await axios
+            .post(`${TELEGRAM_API}/sendMessage`, {
+              chat_id: chatID,
+              text: `Undefined command: ${text} (sry we can't do much)`,
+            })
+            .then((res) => console.log(res.data))
+            .catch((error) => console.log(error))
+          break
+          break
+      }
     default:
       console.log('❌❌❌ Unsupported message type')
       break
