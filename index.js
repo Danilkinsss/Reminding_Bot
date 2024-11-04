@@ -99,7 +99,7 @@ app.post(URI, async (req, res) => {
       await axios
         .post(`${TELEGRAM_API}/sendMessage`, {
           chat_id: chatID,
-          text: `"${text}"\ndate: ${myDate}`,
+          text: `text:  "${text}"\ndate:  ${myDate}`,
         })
         .then((res) => console.log(res.data))
         .catch((error) => console.log(error))
@@ -109,7 +109,7 @@ app.post(URI, async (req, res) => {
         .post(`${TELEGRAM_API}/sendPhoto`, {
           chat_id: chatID,
           photo: req.body.message.photo[0].file_id,
-          caption: `${text}\ndate: ${myDate}`,
+          caption: `caption:  "${text}"\ndate:  ${myDate}`,
         })
         .then((res) => console.log(res.data))
         .catch((error) => console.log(error))
@@ -120,7 +120,7 @@ app.post(URI, async (req, res) => {
         .post(`${TELEGRAM_API}/sendVideo`, {
           chat_id: chatID,
           video: req.body.message.video.file_id,
-          caption: `${text}\ndate: ${myDate}`,
+          caption: `caption:  "${text}"\ndate:  ${myDate}`,
         })
         .then((res) => console.log(res.data))
         .catch((error) => console.log(error))
