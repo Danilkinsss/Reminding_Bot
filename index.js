@@ -38,6 +38,12 @@ app.post(URI, async (req, res) => {
   // res = handler(req.body)
 
   const chatID = req.body.message.chat.id
+  const messageDate = req.body.message.date
+  const myDate = new Date(messageDate * 1000)
+    .toString()
+    .split(' ')
+    .slice(1, 4)
+    .join(' ')
 
   // handling message type and text
   let messageType = null
@@ -58,6 +64,22 @@ app.post(URI, async (req, res) => {
   }
 
   // addition message to the db
+  if (
+    messageType !== 'command' &&
+    messageType !== 'text' &&
+    messageType !== 'video' &&
+    messageType !== 'photo'
+  ) {
+    await axios
+      .post(`${TELEGRAM_API}/sendMessage`, {
+        chat_id: chatID,
+        text: 'Unsupported data type❌',
+      })
+      .then((res) => console.log(res.data))
+      .catch((error) => console.log(error))
+    return new Error('Unsupported data type❌')
+  }
+
   if (messageType !== 'command') {
     insertData([req.body], 'telegram', messageType)
   }
@@ -65,12 +87,19 @@ app.post(URI, async (req, res) => {
   // sending of the message (as a confirmation of successful receiving)
 
   console.log('\n-------------------\nMessage send🔝\n-------------------')
+  await axios
+    .post(`${TELEGRAM_API}/sendMessage`, {
+      chat_id: chatID,
+      text: 'Your data was saved successfully🌟',
+    })
+    .then((res) => console.log(res.data))
+    .catch((error) => console.log(error))
   switch (messageType) {
     case 'text':
       await axios
         .post(`${TELEGRAM_API}/sendMessage`, {
           chat_id: chatID,
-          text: text,
+          text: `"${text}"\ndate: ${myDate}`,
         })
         .then((res) => console.log(res.data))
         .catch((error) => console.log(error))
@@ -80,7 +109,7 @@ app.post(URI, async (req, res) => {
         .post(`${TELEGRAM_API}/sendPhoto`, {
           chat_id: chatID,
           photo: req.body.message.photo[0].file_id,
-          caption: text,
+          caption: `${text}\ndate: ${myDate}`,
         })
         .then((res) => console.log(res.data))
         .catch((error) => console.log(error))
@@ -91,7 +120,7 @@ app.post(URI, async (req, res) => {
         .post(`${TELEGRAM_API}/sendVideo`, {
           chat_id: chatID,
           video: req.body.message.video.file_id,
-          caption: text,
+          caption: `${text}\ndate: ${myDate}`,
         })
         .then((res) => console.log(res.data))
         .catch((error) => console.log(error))
