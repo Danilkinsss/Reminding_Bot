@@ -6,6 +6,7 @@ const axios = require('axios')
 
 // const { users, User, Message } = require('./data.js')
 const { insertData } = require('./db/insert-data.js')
+const { checkData } = require('./db/check-for-data.js')
 // TODO: not used
 const { handleMessage } = require('./controller/lib/telegram.js')
 const { handler } = require('./controller/index.js')
@@ -48,17 +49,23 @@ app.post(URI, async (req, res) => {
   // handling message type and text
   let messageType = null
   let text = req.body.message.text || null
+  let fileID = null
   if (text !== null) {
     if (text.charAt(0) === '/') {
       messageType = 'command'
     } else {
       messageType = 'text'
+      fileID = text
     }
   } else {
     if (req.body.message.photo) {
       messageType = 'photo'
+      fileID = req.body.message.photo[0].file_unique_id
+      console.log('🌍Checkin', fileID)
     } else if (req.body.message.video) {
       messageType = 'video'
+      fileID = req.body.message.video.file_unique_id
+      console.log('🌍🌍🌍Checkin', fileID)
     }
     text = req.body.message.caption
   }
@@ -81,11 +88,14 @@ app.post(URI, async (req, res) => {
   }
 
   if (messageType !== 'command') {
-    insertData([req.body], 'telegram', messageType)
+    const checkin = checkData(fileID, 'telegram', messageType)
+    console.log('🎐🎐Checkin', checkin)
+    if (checkin == null) {
+      insertData([req.body], 'telegram', messageType)
+    }
   }
 
   // sending of the message (as a confirmation of successful receiving)
-
   console.log('\n-------------------\nMessage send🔝\n-------------------')
   await axios
     .post(`${TELEGRAM_API}/sendMessage`, {
