@@ -36,15 +36,12 @@ function checkData(msgTextOrFile, dbName, colName) {
       const result = JSON.stringify(document)
       console.log('Doooooooooooocument found:\n' + result)
       return result
-    } catch (err) {
-      console.log(err.stack)
     } finally {
       await client.close()
     }
   }
 
-  const asd = run().catch(console.dir)
-  return asd
+  run()
 }
 
 module.exports = {

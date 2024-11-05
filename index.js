@@ -89,7 +89,7 @@ app.post(URI, async (req, res) => {
 
   if (messageType !== 'command') {
     const checkin = checkData(fileID, 'telegram', messageType)
-    console.log('🎐🎐Checkin', checkin)
+    console.log('🎐🎐Checkin: the result(return) of check-for-data', checkin)
     if (checkin == null) {
       insertData([req.body], 'telegram', messageType)
     }
