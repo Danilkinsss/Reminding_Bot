@@ -1,4 +1,5 @@
 // ngrok http 5000
+// yarn dev
 
 require('dotenv').config()
 const express = require('express')
@@ -10,6 +11,7 @@ const { checkData } = require('./db/check-for-data.js')
 // TODO: not used
 const { handleMessage } = require('./controller/lib/telegram.js')
 const { handler } = require('./controller/index.js')
+const { deleteMessage } = require('./delete-msg.js')
 
 const { TOKEN, SERVER_URL } = process.env
 const TELEGRAM_API = `https://api.telegram.org/bot${TOKEN}`
@@ -20,10 +22,20 @@ const app = express()
 app.use(express.json())
 
 const init = async () => {
+  console.log('💠 In: init')
   const res = await axios
     .get(`${TELEGRAM_API}/setWebhook?url=${WEBHOOK_URL}`)
     .then((res) => console.log(res.data))
     .catch((error) => console.log(error))
+
+  // await axios
+  //   .post(`${TELEGRAM_API}/deleteMessage`, {
+  //     chat_id: 300529652,
+  //     message_id: 890,
+  //   })
+  //   .then((res) => console.log(res.data))
+  //   .catch((error) => console.log(error))
+  // console.log('\tSuccessfull🌟')
 }
 
 /*
@@ -32,11 +44,15 @@ const init = async () => {
 */
 
 app.post(URI, async (req, res) => {
+  console.log('💠 In: post')
   console.log('\n-------------------\nMessage recieved📩\n-------------------')
   console.log(req.body)
 
   //TODO: not used
   // res = handler(req.body)
+  // if (deleteMessage(954, 300529652)) {
+  //   console.log('\t\tSuccessfull🌟')
+  // }
 
   const chatID = req.body.message.chat.id
   const messageDate = req.body.message.date
@@ -50,6 +66,7 @@ app.post(URI, async (req, res) => {
   let messageType = null
   let text = req.body.message.text || null
   let fileID = null
+  let messageID = req.body.message.message_id
   if (text !== null) {
     if (text.charAt(0) === '/') {
       messageType = 'command'
@@ -61,49 +78,53 @@ app.post(URI, async (req, res) => {
     if (req.body.message.photo) {
       messageType = 'photo'
       fileID = req.body.message.photo[0].file_unique_id
-      console.log('🌍Checkin', fileID)
     } else if (req.body.message.video) {
       messageType = 'video'
       fileID = req.body.message.video.file_unique_id
-      console.log('🌍🌍🌍Checkin', fileID)
     }
     text = req.body.message.caption
   }
 
-  // addition message to the db
+  // check if dataType is supported -> TODO: fix
   if (
     messageType !== 'command' &&
     messageType !== 'text' &&
     messageType !== 'video' &&
     messageType !== 'photo'
   ) {
+    console.log('\n-------------------\nMessage send🔝\n-------------------')
+    console.log('type', messageType)
     await axios
       .post(`${TELEGRAM_API}/sendMessage`, {
         chat_id: chatID,
-        text: 'Unsupported data type❌',
+        text: 'Unsupported data type❌❌❌',
       })
       .then((res) => console.log(res.data))
       .catch((error) => console.log(error))
-    return new Error('Unsupported data type❌')
+    return res.sendStatus(200)
+    // return new Error('Unsupported data type❌')
   }
 
+  // addition message to the db
   if (messageType !== 'command') {
-    const checkin = checkData(fileID, 'telegram', messageType)
-    console.log('🎐🎐Checkin: the result(return) of check-for-data', checkin)
-    if (checkin == null) {
+    console.log('\t\t\t Here is the type:', messageType)
+    const checkin = await checkData(messageID, fileID, 'telegram', messageType)
+    console.log('\t\t\t🎐🎐Checkin: return of check-for-data', checkin)
+    if (checkin == 'null') {
       insertData([req.body], 'telegram', messageType)
+
+      await axios
+        .post(`${TELEGRAM_API}/sendMessage`, {
+          chat_id: chatID,
+          text: 'Your data was saved successfully🌟',
+        })
+        .then((res) => console.log(res.data))
+        .catch((error) => console.log(error))
     }
   }
 
   // sending of the message (as a confirmation of successful receiving)
   console.log('\n-------------------\nMessage send🔝\n-------------------')
-  await axios
-    .post(`${TELEGRAM_API}/sendMessage`, {
-      chat_id: chatID,
-      text: 'Your data was saved successfully🌟',
-    })
-    .then((res) => console.log(res.data))
-    .catch((error) => console.log(error))
   switch (messageType) {
     case 'text':
       await axios
@@ -166,7 +187,6 @@ app.post(URI, async (req, res) => {
             .then((res) => console.log(res.data))
             .catch((error) => console.log(error))
           break
-          break
       }
     default:
       console.log('❌❌❌ Unsupported message type')
@@ -196,12 +216,8 @@ app.post(URI, async (req, res) => {
   return res.sendStatus(200)
 })
 
-/*
-
-
-*/
-
 app.listen(process.env.PORT || 5000, async () => {
-  console.log('🍩 App is running! on port: ', process.env.PORT || 5000)
+  console.log('💠 In: listen')
+  console.log('🍩 App is running! on port:', process.env.PORT || 5000)
   await init()
 })
