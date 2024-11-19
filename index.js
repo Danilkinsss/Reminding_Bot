@@ -140,7 +140,7 @@ app.post(URI, async (req, res) => {
         .post(`${TELEGRAM_API}/sendPhoto`, {
           chat_id: chatID,
           photo: req.body.message.photo[0].file_id,
-          caption: `caption:  "${text}"\ndate:  ${myDate}`,
+          caption: `date:  ${myDate}`, //caption:  "${text}"\n
         })
         .then((res) => console.log(res.data))
         .catch((error) => console.log(error))
@@ -151,7 +151,7 @@ app.post(URI, async (req, res) => {
         .post(`${TELEGRAM_API}/sendVideo`, {
           chat_id: chatID,
           video: req.body.message.video.file_id,
-          caption: `caption:  "${text}"\ndate:  ${myDate}`,
+          caption: `date:  ${myDate}`, //caption:  "${text}"\n
         })
         .then((res) => console.log(res.data))
         .catch((error) => console.log(error))
