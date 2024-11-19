@@ -32,7 +32,7 @@ function insertData(objsArr, dbName, colName) {
       const document = await col.findOne(filter)
 
       // Print results
-      console.log('Document found:\n' + JSON.stringify(document))
+      console.log('Some file from danilkinsss:\n' + JSON.stringify(document))
     } catch (err) {
       console.log(err.stack)
     } finally {
