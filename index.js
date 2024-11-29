@@ -99,22 +99,17 @@ app.post(URI, async (req, res) => {
 
   // getting useful variables
   const messageID = req.body.message.message_id
-  const messageDate = req.body.message.date
   const chatID = req.body.message.chat.id
-  const formatedMessageDate = new Date(messageDate * 1000)
-    .toString()
-    .split(' ')
-    .slice(1, 4)
-    .join(' ')
+  let dbMessage = null
 
-  // addition message to the db
+  // addition message data to the db
   if (messageType === 'command') {
     console.log('\t\t\t It is a command type')
   } else {
     console.log('\t\t\t Here is the type:', messageType)
-    const checkin = await checkData(messageID, fileID, 'telegram', messageType)
-    console.log('\t\t\t🎐🎐Checkin: return of check-for-data', checkin)
-    if (checkin == 'null') {
+    dbMessage = await checkData(messageID, fileID, 'telegram', messageType)
+    console.log('\t\t\t🔮🔮🔮dbMessage:\n', dbMessage)
+    if (dbMessage == null) {
       insertData([req.body], 'telegram', messageType)
 
       await axios
@@ -124,17 +119,30 @@ app.post(URI, async (req, res) => {
         })
         .then((res) => console.log(res.data))
         .catch((error) => console.log(error))
+      dbMessage = await checkData(
+        messageID + 1,
+        fileID,
+        'telegram',
+        messageType
+      )
     }
+    console.log('\t\t\t🔮🔮🔮dbMessage 2!:\n', dbMessage)
   }
 
-  // sending of the message (as a confirmation of successful receiving)
+  const formatedMessageDate = new Date(dbMessage.message.date * 1000)
+    .toString()
+    .split(' ')
+    .slice(1, 4)
+    .join(' ')
+
+  // sending  the message (as a confirmation of successful saving/finding it)
   console.log('\n-------------------\nMessage send🔝\n-------------------')
   switch (messageType) {
     case 'text':
       await axios
         .post(`${TELEGRAM_API}/sendMessage`, {
           chat_id: chatID,
-          text: `text:  "${text}"\ndate:  ${formatedMessageDate}`,
+          text: `text:  "${dbMessage.message.text}"\ndate:  ${formatedMessageDate}`,
         })
         .then((res) => console.log(res.data))
         .catch((error) => console.log(error))
@@ -143,7 +151,7 @@ app.post(URI, async (req, res) => {
       await axios
         .post(`${TELEGRAM_API}/sendPhoto`, {
           chat_id: chatID,
-          photo: req.body.message.photo[0].file_id,
+          photo: dbMessage.message.photo[0].file_id,
           caption: `date:  ${formatedMessageDate}`, //caption:  "${text}"\n
         })
         .then((res) => console.log(res.data))
@@ -154,7 +162,7 @@ app.post(URI, async (req, res) => {
       await axios
         .post(`${TELEGRAM_API}/sendVideo`, {
           chat_id: chatID,
-          video: req.body.message.video.file_id,
+          video: dbMessage.message.video.file_id,
           caption: `date:  ${formatedMessageDate}`, //caption:  "${text}"\n
         })
         .then((res) => console.log(res.data))
