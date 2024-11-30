@@ -13,6 +13,7 @@ const { checkData } = require('./db/check-for-data.js')
 const { handleMessage } = require('./controller/lib/telegram.js')
 const { handler } = require('./controller/index.js')
 const { deleteMessage } = require('./delete-msg.js')
+const { getData } = require('./db/get-data.js')
 
 const { TOKEN, SERVER_URL } = process.env
 const TELEGRAM_API = `https://api.telegram.org/bot${TOKEN}`
@@ -129,11 +130,14 @@ app.post(URI, async (req, res) => {
     console.log('\t\t\t🔮🔮🔮dbMessage 2!:\n', dbMessage)
   }
 
-  const formatedMessageDate = new Date(dbMessage.message.date * 1000)
-    .toString()
-    .split(' ')
-    .slice(1, 4)
-    .join(' ')
+  const formatedMessageDate =
+    messageType !== 'command'
+      ? new Date(dbMessage.message.date * 1000)
+          .toString()
+          .split(' ')
+          .slice(1, 4)
+          .join(' ')
+      : 69
 
   // sending  the message (as a confirmation of successful saving/finding it)
   console.log('\n-------------------\nMessage send🔝\n-------------------')
@@ -174,7 +178,7 @@ app.post(URI, async (req, res) => {
           await axios
             .post(`${TELEGRAM_API}/sendMessage`, {
               chat_id: chatID,
-              text: `Hello there!👋\nWelcome to the reminding bot!🤓\nSend me some message/photo/video, I will save them and then, with /get_reminder command, I will send you a random uploaded one.🤩🤩`,
+              text: `Hello there!👋\nWelcome to the Reminding Bot!🤖\nSend me some message/photo/video, I will save them, and with /get_reminder command, I will send you a random one.🛫`,
             })
             .then((res) => console.log(res.data))
             .catch((error) => console.log(error))
@@ -191,6 +195,8 @@ app.post(URI, async (req, res) => {
           break
 
         case '/get_reminder':
+          const messageFromDB = getData('telegram', 'photo')
+          console.log('🍏🍏🍏🍏🍏🍏🍏GET RANDOM:', messageFromDB)
           await axios
             .post(`${TELEGRAM_API}/sendMessage`, {
               chat_id: chatID,
@@ -210,6 +216,7 @@ app.post(URI, async (req, res) => {
             .catch((error) => console.log(error))
           break
       }
+      break
     default:
       console.log('❌❌❌ Unsupported message type')
       break
