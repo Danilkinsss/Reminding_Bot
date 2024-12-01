@@ -45,10 +45,7 @@ function checkData(msgID, msgTextOrFile, dbName, colName) {
       }
       const document = await col.findOne(filter)
 
-      // Print results
-      // const result = JSON.stringify(document)
-      const result = document
-      return result // "null" or not null (object)
+      return document // "null" or not null (object)
     } finally {
       await client.close()
     }

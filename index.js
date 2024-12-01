@@ -24,7 +24,6 @@ const app = express()
 app.use(express.json())
 
 const init = async () => {
-  console.log('💠 In: init')
   const res = await axios
     .get(`${TELEGRAM_API}/setWebhook?url=${WEBHOOK_URL}`)
     .then((res) => console.log(res.data))
@@ -46,7 +45,6 @@ const init = async () => {
 */
 
 app.post(URI, async (req, res) => {
-  console.log('💠 In: post')
   console.log('\n-------------------\nMessage recieved📩\n-------------------')
   console.log(req.body)
 
@@ -146,7 +144,7 @@ app.post(URI, async (req, res) => {
       await axios
         .post(`${TELEGRAM_API}/sendMessage`, {
           chat_id: chatID,
-          text: `text:  "${dbMessage.message.text}"\ndate:  ${formatedMessageDate}`,
+          text: `"${dbMessage.message.text}"\n🗓  ${formatedMessageDate}`,
         })
         .then((res) => console.log(res.data))
         .catch((error) => console.log(error))
@@ -156,7 +154,7 @@ app.post(URI, async (req, res) => {
         .post(`${TELEGRAM_API}/sendPhoto`, {
           chat_id: chatID,
           photo: dbMessage.message.photo[0].file_id,
-          caption: `date:  ${formatedMessageDate}`, //caption:  "${text}"\n
+          caption: `🗓  ${formatedMessageDate}`, //caption:  "${text}"\n
         })
         .then((res) => console.log(res.data))
         .catch((error) => console.log(error))
@@ -167,7 +165,7 @@ app.post(URI, async (req, res) => {
         .post(`${TELEGRAM_API}/sendVideo`, {
           chat_id: chatID,
           video: dbMessage.message.video.file_id,
-          caption: `date:  ${formatedMessageDate}`, //caption:  "${text}"\n
+          caption: `🗓  ${formatedMessageDate}`, //caption:  "${text}"\n
         })
         .then((res) => console.log(res.data))
         .catch((error) => console.log(error))
@@ -211,7 +209,7 @@ app.post(URI, async (req, res) => {
               await axios
                 .post(`${TELEGRAM_API}/sendMessage`, {
                   chat_id: chatID,
-                  text: `text:  "${element.message.text}"\ndate:  ${formatedMessageDate2}`,
+                  text: `"${element.message.text}"\n🗓  ${formatedMessageDate2}`,
                 })
                 .then((res) => console.log(res.data))
                 .catch((error) => console.log(error))
@@ -221,7 +219,7 @@ app.post(URI, async (req, res) => {
                 .post(`${TELEGRAM_API}/sendPhoto`, {
                   chat_id: chatID,
                   photo: element.message.photo[0].file_id,
-                  caption: `date:  ${formatedMessageDate2}`, //caption:  "${text}"\n
+                  caption: `🗓  ${formatedMessageDate2}`, //caption:  "${text}"\n
                 })
                 .then((res) => console.log(res.data))
                 .catch((error) => console.log(error))
@@ -232,7 +230,7 @@ app.post(URI, async (req, res) => {
                 .post(`${TELEGRAM_API}/sendVideo`, {
                   chat_id: chatID,
                   video: element.message.video.file_id,
-                  caption: `date:  ${formatedMessageDate2}`, //caption:  "${text}"\n
+                  caption: `🗓  ${formatedMessageDate2}`, //caption:  "${text}"\n
                 })
                 .then((res) => console.log(res.data))
                 .catch((error) => console.log(error))
@@ -280,7 +278,6 @@ app.post(URI, async (req, res) => {
 })
 
 app.listen(process.env.PORT || 5000, async () => {
-  console.log('💠 In: listen')
   console.log('🍩 App is running! on port:', process.env.PORT || 5000)
   await init()
 })
