@@ -195,15 +195,49 @@ app.post(URI, async (req, res) => {
           break
 
         case '/get_reminder':
-          const messageFromDB = getData('telegram', 'photo')
-          console.log('🍏🍏🍏🍏🍏🍏🍏GET RANDOM:', messageFromDB)
-          await axios
-            .post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: chatID,
-              text: `...`,
-            })
-            .then((res) => console.log(res.data))
-            .catch((error) => console.log(error))
+          const options = ['text', 'photo', 'video']
+          const collection = options[Math.floor(Math.random() * 3)]
+          const messageFromDB = await getData('telegram', collection)
+          const element =
+            messageFromDB[Math.floor(Math.random() * messageFromDB.length)]
+          const formatedMessageDate2 = new Date(element.message.date * 1000)
+            .toString()
+            .split(' ')
+            .slice(1, 4)
+            .join(' ')
+          console.log('🍏🍏🍏🍏🍏🍏🍏GET RANDOM:', element)
+          switch (collection) {
+            case 'text':
+              await axios
+                .post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: chatID,
+                  text: `text:  "${element.message.text}"\ndate:  ${formatedMessageDate2}`,
+                })
+                .then((res) => console.log(res.data))
+                .catch((error) => console.log(error))
+              break
+            case 'photo':
+              await axios
+                .post(`${TELEGRAM_API}/sendPhoto`, {
+                  chat_id: chatID,
+                  photo: element.message.photo[0].file_id,
+                  caption: `date:  ${formatedMessageDate2}`, //caption:  "${text}"\n
+                })
+                .then((res) => console.log(res.data))
+                .catch((error) => console.log(error))
+              break
+            case 'video':
+              // console.log(req.body.message.video.file_id || undefined)
+              await axios
+                .post(`${TELEGRAM_API}/sendVideo`, {
+                  chat_id: chatID,
+                  video: element.message.video.file_id,
+                  caption: `date:  ${formatedMessageDate2}`, //caption:  "${text}"\n
+                })
+                .then((res) => console.log(res.data))
+                .catch((error) => console.log(error))
+              break
+          }
           break
 
         default:
