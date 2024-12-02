@@ -1,10 +1,4 @@
 // node insert-data.js
-//
-// AQADBOIxG33-WUl4
-// AQADBOIxG33-WUl4
-//
-// AgACAgIAAxkBAAIC5Gc8YId97_GR2wyyA64yEhOxJwccAAIE4jEbff5ZSQABSkki7zS8EQEAAwIAA3MAAzYE
-// AgACAgIAAxkBAAIC5Gc8YId97_GR2wyyA64yEhOxJwccAAIE4jEbff5ZSQABSkki7zS8EQEAAwIAA3MAAzYE
 function checkData(msgID, msgTextOrFile, dbName, colName) {
   const { MongoClient } = require('mongodb')
 
@@ -19,8 +13,6 @@ function checkData(msgID, msgTextOrFile, dbName, colName) {
     try {
       // Connect to the Atlas cluster
       await client.connect()
-      // AQADBOkxG7DTwUh4
-      // AQADBOkxG7DTwUh4
 
       // Get the database and collection on which to run the operation
       const db = client.db(dbName)
@@ -36,19 +28,20 @@ function checkData(msgID, msgTextOrFile, dbName, colName) {
           'message.photo.0.file_unique_id': { $eq: msgTextOrFile },
           'message.message_id': { $not: { $eq: msgID } },
         }
-        console.log('--------hereeeeeeee', msgTextOrFile)
-      } else {
+      } else if (colName === 'video') {
         filter = {
           'message.video.file_unique_id': { $eq: msgTextOrFile },
+          'message.message_id': { $not: { $eq: msgID } },
+        }
+      } else {
+        filter = {
+          'message.check-for-data-error...': { $eq: msgTextOrFile },
           'message.message_id': { $not: { $eq: msgID } },
         }
       }
       const document = await col.findOne(filter)
 
-      // Print results
-      // const result = JSON.stringify(document)
-      const result = document
-      return result // "null" or not null (object)
+      return document // "null" or not null (object)
     } finally {
       await client.close()
     }

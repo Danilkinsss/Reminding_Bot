@@ -13,6 +13,7 @@ const { checkData } = require('./db/check-for-data.js')
 const { handleMessage } = require('./controller/lib/telegram.js')
 const { handler } = require('./controller/index.js')
 const { deleteMessage } = require('./delete-msg.js')
+const { getData } = require('./db/get-data.js')
 
 const { TOKEN, SERVER_URL } = process.env
 const TELEGRAM_API = `https://api.telegram.org/bot${TOKEN}`
@@ -23,7 +24,6 @@ const app = express()
 app.use(express.json())
 
 const init = async () => {
-  console.log('💠 In: init')
   const res = await axios
     .get(`${TELEGRAM_API}/setWebhook?url=${WEBHOOK_URL}`)
     .then((res) => console.log(res.data))
@@ -45,9 +45,9 @@ const init = async () => {
 */
 
 app.post(URI, async (req, res) => {
-  console.log('💠 In: post')
   console.log('\n-------------------\nMessage recieved📩\n-------------------')
   console.log(req.body)
+  const messageTypes = ['command', 'text', 'photo', 'video']
 
   //TODO: not used
   // res = handler(req.body)
@@ -56,36 +56,31 @@ app.post(URI, async (req, res) => {
   // }
 
   // handling message type and its' text/file
-  let messageType = null
+  let messageType = 'undefined'
   let text = req.body.message.text || null
   let fileID = null
   if (text !== null) {
     if (text.charAt(0) === '/') {
-      messageType = 'command'
+      messageType = messageTypes[0] // command
     } else {
-      messageType = 'text'
+      messageType = messageTypes[1] // text
       fileID = text
     }
   } else {
     if (req.body.message.photo) {
-      messageType = 'photo'
+      messageType = messageTypes[2] // photo
       fileID = req.body.message.photo[0].file_unique_id
     } else if (req.body.message.video) {
-      messageType = 'video'
+      messageType = messageTypes[3] // video
       fileID = req.body.message.video.file_unique_id
     }
     text = req.body.message.caption
   }
 
   // check if dataType is supported -> TODO: fix
-  if (
-    messageType !== 'command' &&
-    messageType !== 'text' &&
-    messageType !== 'video' &&
-    messageType !== 'photo'
-  ) {
+  if (!messageTypes.includes(messageType)) {
     console.log('\n-------------------\nMessage send🔝\n-------------------')
-    console.log('type', messageType)
+    console.log('type:', messageType)
     await axios
       .post(`${TELEGRAM_API}/sendMessage`, {
         chat_id: chatID,
@@ -103,14 +98,11 @@ app.post(URI, async (req, res) => {
   let dbMessage = null
 
   // addition message data to the db
-  if (messageType === 'command') {
-    console.log('\t\t\t It is a command type')
-  } else {
-    console.log('\t\t\t Here is the type:', messageType)
+  if (messageType !== 'command') {
     dbMessage = await checkData(messageID, fileID, 'telegram', messageType)
     console.log('\t\t\t🔮🔮🔮dbMessage:\n', dbMessage)
     if (dbMessage == null) {
-      insertData([req.body], 'telegram', messageType)
+      insertData(req.body, 'telegram', messageType)
 
       await axios
         .post(`${TELEGRAM_API}/sendMessage`, {
@@ -119,127 +111,108 @@ app.post(URI, async (req, res) => {
         })
         .then((res) => console.log(res.data))
         .catch((error) => console.log(error))
-      dbMessage = await checkData(
-        messageID + 1,
-        fileID,
-        'telegram',
-        messageType
-      )
+      dbMessage = await checkData(-1, fileID, 'telegram', messageType)
     }
     console.log('\t\t\t🔮🔮🔮dbMessage 2!:\n', dbMessage)
   }
 
-  const formatedMessageDate = new Date(dbMessage.message.date * 1000)
-    .toString()
-    .split(' ')
-    .slice(1, 4)
-    .join(' ')
+  const formatedMessageDate =
+    messageType !== 'command' ? formatTime(dbMessage.message.date) : 69
 
   // sending  the message (as a confirmation of successful saving/finding it)
   console.log('\n-------------------\nMessage send🔝\n-------------------')
+  let messageData = { chat_id: chatID }
+  let telegramMethod
   switch (messageType) {
     case 'text':
-      await axios
-        .post(`${TELEGRAM_API}/sendMessage`, {
-          chat_id: chatID,
-          text: `text:  "${dbMessage.message.text}"\ndate:  ${formatedMessageDate}`,
-        })
-        .then((res) => console.log(res.data))
-        .catch((error) => console.log(error))
+      messageData.text = `"${dbMessage.message.text}"\n🗓  ${formatedMessageDate}`
+      telegramMethod = 'sendMessage'
       break
     case 'photo':
-      await axios
-        .post(`${TELEGRAM_API}/sendPhoto`, {
-          chat_id: chatID,
-          photo: dbMessage.message.photo[0].file_id,
-          caption: `date:  ${formatedMessageDate}`, //caption:  "${text}"\n
-        })
-        .then((res) => console.log(res.data))
-        .catch((error) => console.log(error))
+      messageData.caption = `🗓  ${formatedMessageDate}` //caption:  "${text}"\n
+      messageData.photo = dbMessage.message.photo[0].file_id
+      telegramMethod = 'sendPhoto'
       break
     case 'video':
-      // console.log(req.body.message.video.file_id || undefined)
-      await axios
-        .post(`${TELEGRAM_API}/sendVideo`, {
-          chat_id: chatID,
-          video: dbMessage.message.video.file_id,
-          caption: `date:  ${formatedMessageDate}`, //caption:  "${text}"\n
-        })
-        .then((res) => console.log(res.data))
-        .catch((error) => console.log(error))
+      messageData.caption = `🗓  ${formatedMessageDate}` //caption:  "${text}"\n
+      messageData.video = dbMessage.message.video.file_id
+      telegramMethod = 'sendVideo'
       break
     case 'command':
       switch (text) {
         case '/start':
-          await axios
-            .post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: chatID,
-              text: `Hello there!👋\nWelcome to the reminding bot!🤓\nSend me some message/photo/video, I will save them and then, with /get_reminder command, I will send you a random uploaded one.🤩🤩`,
-            })
-            .then((res) => console.log(res.data))
-            .catch((error) => console.log(error))
+          messageData.text = `Hello there!👋\nWelcome to the Reminding Bot!🤖\nSend me some message/photo/video, I will save them, and with /get_reminder command, I will send you a random one.🛫`
+          telegramMethod = 'sendMessage'
           break
-
         case '/help':
-          await axios
-            .post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: chatID,
-              text: `Here is the list of all commands:\n/start - check if the bot is active and get recieve a greeting\n/help - see all commands\n/get_reminder - get a random reminder`,
-            })
-            .then((res) => console.log(res.data))
-            .catch((error) => console.log(error))
+          messageData.text = `Here is the list of all commands:\n/start - check if the bot is active and get recieve a greeting\n/help - see all commands\n/get_reminder - get a random reminder`
+          telegramMethod = 'sendMessage'
           break
-
         case '/get_reminder':
-          await axios
-            .post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: chatID,
-              text: `...`,
-            })
-            .then((res) => console.log(res.data))
-            .catch((error) => console.log(error))
+          const allMessages = []
+          for (let i = 1; i < messageTypes.length; i++) {
+            const typeMessages = await getData('telegram', messageTypes[i])
+            allMessages.push(...typeMessages)
+          }
+
+          // const messageFromDB = await getData('telegram', collection)
+          console.log('🍌🍌🍌🍌🍌🍌', allMessages)
+          const randomMessage =
+            allMessages[Math.floor(Math.random() * allMessages.length)]
+          const randomMessageTypeFormatedDate = formatTime(
+            randomMessage.message.date
+          )
+          const randomMessageType = randomMessage.type
+          console.log('🍏🍏🍏🍏🍏🍏🍏GET RANDOM:', randomMessage)
+
+          switch (randomMessageType) {
+            case 'text':
+              messageData.text = `"${randomMessage.message.text}"\n🗓  ${randomMessageTypeFormatedDate}`
+              telegramMethod = 'sendMessage'
+              break
+            case 'photo':
+              messageData.caption = `🗓  ${randomMessageTypeFormatedDate}`
+              messageData.photo = randomMessage.message.photo[0].file_id
+              telegramMethod = 'sendPhoto'
+              break
+            case 'video':
+              messageData.caption = `🗓  ${randomMessageTypeFormatedDate}`
+              messageData.video = randomMessage.message.video.file_id
+              telegramMethod = 'sendVideo'
+              break
+            default:
+              messageData.text = `Unexpected data type inside /get_reminder...`
+              telegramMethod = 'sendMessage'
+              break
+          }
           break
 
         default:
-          await axios
-            .post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: chatID,
-              text: `Undefined command: ${text} (sry we can't do much)`,
-            })
-            .then((res) => console.log(res.data))
-            .catch((error) => console.log(error))
+          messageData.text = `Undefined command: ${text} (sry we can't do much)`
+          telegramMethod = 'sendMessage'
           break
       }
+      break
     default:
-      console.log('❌❌❌ Unsupported message type')
+      console.log('Error type!❌❌')
+      messageData.text = `Undefined message type: ${messageType} (sry we can't do much)`
+      telegramMethod = 'sendMessage'
       break
   }
 
-  // if (text !== null) {
-  //   console.log('\n-------------------\nMessage send🔝\n-------------------')
-  //   await axios
-  //     .post(`${TELEGRAM_API}/sendMessage`, {
-  //       chat_id: chatID,
-  //       text: text,
-  //     })
-  //     .then((res) => console.log(res.data))
-  //     .catch((error) => console.log(error))
-  // } else {
-  //   await axios
-  //     .post(`${TELEGRAM_API}/sendPhoto`, {
-  //       chat_id: chatID,
-  //       photo: photoFileID,
-  //       caption: caption,
-  //     })
-  //     .then((res) => console.log(res.data))
-  //     .catch((error) => console.log(error))
-  // }
+  await axios
+    .post(`${TELEGRAM_API}/${telegramMethod}`, messageData)
+    .then((res) => console.log(res.data))
+    .catch((error) => console.log(error))
 
   return res.sendStatus(200)
 })
 
 app.listen(process.env.PORT || 5000, async () => {
-  console.log('💠 In: listen')
   console.log('🍩 App is running! on port:', process.env.PORT || 5000)
   await init()
 })
+
+function formatTime(time) {
+  return new Date(time * 1000).toString().split(' ').slice(1, 4).join(' ')
+}
