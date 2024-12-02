@@ -109,7 +109,7 @@ app.post(URI, async (req, res) => {
     dbMessage = await checkData(messageID, fileID, 'telegram', messageType)
     console.log('\t\t\t🔮🔮🔮dbMessage:\n', dbMessage)
     if (dbMessage == null) {
-      insertData([req.body], 'telegram', messageType)
+      insertData(req.body, 'telegram', messageType)
 
       await axios
         .post(`${TELEGRAM_API}/sendMessage`, {
@@ -194,22 +194,30 @@ app.post(URI, async (req, res) => {
 
         case '/get_reminder':
           const options = ['text', 'photo', 'video']
-          const collection = options[Math.floor(Math.random() * 3)]
-          const messageFromDB = await getData('telegram', collection)
-          const element =
-            messageFromDB[Math.floor(Math.random() * messageFromDB.length)]
-          const formatedMessageDate2 = new Date(element.message.date * 1000)
+          const allMessages = []
+          for (let i = 0; i < options.length; i++) {
+            const typeMessages = await getData('telegram', options[i])
+            allMessages.push(...typeMessages)
+          }
+          // const messageFromDB = await getData('telegram', collection)
+          console.log('🍌🍌🍌🍌🍌🍌', allMessages)
+          const randomMessage =
+            allMessages[Math.floor(Math.random() * allMessages.length)]
+          const randomMessageTypeFormatedDate = new Date(
+            randomMessage.message.date * 1000
+          )
             .toString()
             .split(' ')
             .slice(1, 4)
             .join(' ')
-          console.log('🍏🍏🍏🍏🍏🍏🍏GET RANDOM:', element)
-          switch (collection) {
+          const randomMessageType = randomMessage.type
+          console.log('🍏🍏🍏🍏🍏🍏🍏GET RANDOM:', randomMessage)
+          switch (randomMessageType) {
             case 'text':
               await axios
                 .post(`${TELEGRAM_API}/sendMessage`, {
                   chat_id: chatID,
-                  text: `"${element.message.text}"\n🗓  ${formatedMessageDate2}`,
+                  text: `"${randomMessage.message.text}"\n🗓  ${randomMessageTypeFormatedDate}`,
                 })
                 .then((res) => console.log(res.data))
                 .catch((error) => console.log(error))
@@ -218,19 +226,27 @@ app.post(URI, async (req, res) => {
               await axios
                 .post(`${TELEGRAM_API}/sendPhoto`, {
                   chat_id: chatID,
-                  photo: element.message.photo[0].file_id,
-                  caption: `🗓  ${formatedMessageDate2}`, //caption:  "${text}"\n
+                  photo: randomMessage.message.photo[0].file_id,
+                  caption: `🗓  ${randomMessageTypeFormatedDate}`, //caption:  "${text}"\n
                 })
                 .then((res) => console.log(res.data))
                 .catch((error) => console.log(error))
               break
             case 'video':
-              // console.log(req.body.message.video.file_id || undefined)
               await axios
                 .post(`${TELEGRAM_API}/sendVideo`, {
                   chat_id: chatID,
-                  video: element.message.video.file_id,
-                  caption: `🗓  ${formatedMessageDate2}`, //caption:  "${text}"\n
+                  video: randomMessage.message.video.file_id,
+                  caption: `🗓  ${randomMessageTypeFormatedDate}`, //caption:  "${text}"\n
+                })
+                .then((res) => console.log(res.data))
+                .catch((error) => console.log(error))
+              break
+            default:
+              await axios
+                .post(`${TELEGRAM_API}/sendMessage`, {
+                  chat_id: chatID,
+                  text: `Else...`,
                 })
                 .then((res) => console.log(res.data))
                 .catch((error) => console.log(error))

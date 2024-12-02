@@ -21,7 +21,12 @@ function insertData(objsArr, dbName, colName) {
       const col = db.collection(colName)
 
       // Create new documents
-      const collectionDocument = [...objsArr]
+      console.log('🐛🐛🐛🐛', objsArr)
+      objsArr.type = colName
+      console.log('🐛🐛🐛🐛🐛🐛🐛🐛', objsArr)
+      let collectionDocument = [objsArr]
+      console.log('😻😻😻😻😻😻', collectionDocument)
+      // const collectionDocument = [...objsArr, colName]
 
       // Insert the documents into the specified collection
       const p = await col.insertMany(collectionDocument)
