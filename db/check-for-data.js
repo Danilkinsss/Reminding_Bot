@@ -1,10 +1,4 @@
 // node insert-data.js
-//
-// AQADBOIxG33-WUl4
-// AQADBOIxG33-WUl4
-//
-// AgACAgIAAxkBAAIC5Gc8YId97_GR2wyyA64yEhOxJwccAAIE4jEbff5ZSQABSkki7zS8EQEAAwIAA3MAAzYE
-// AgACAgIAAxkBAAIC5Gc8YId97_GR2wyyA64yEhOxJwccAAIE4jEbff5ZSQABSkki7zS8EQEAAwIAA3MAAzYE
 function checkData(msgID, msgTextOrFile, dbName, colName) {
   const { MongoClient } = require('mongodb')
 
@@ -34,7 +28,6 @@ function checkData(msgID, msgTextOrFile, dbName, colName) {
           'message.photo.0.file_unique_id': { $eq: msgTextOrFile },
           'message.message_id': { $not: { $eq: msgID } },
         }
-        console.log('--------hereeeeeeee', msgTextOrFile)
       } else if (colName === 'video') {
         filter = {
           'message.video.file_unique_id': { $eq: msgTextOrFile },

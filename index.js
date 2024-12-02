@@ -117,13 +117,7 @@ app.post(URI, async (req, res) => {
   }
 
   const formatedMessageDate =
-    messageType !== 'command'
-      ? new Date(dbMessage.message.date * 1000)
-          .toString()
-          .split(' ')
-          .slice(1, 4)
-          .join(' ')
-      : 69
+    messageType !== 'command' ? formatTime(dbMessage.message.date) : 69
 
   // sending  the message (as a confirmation of successful saving/finding it)
   console.log('\n-------------------\nMessage send🔝\n-------------------')
@@ -147,100 +141,62 @@ app.post(URI, async (req, res) => {
     case 'command':
       switch (text) {
         case '/start':
-          await axios
-            .post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: chatID,
-              text: `Hello there!👋\nWelcome to the Reminding Bot!🤖\nSend me some message/photo/video, I will save them, and with /get_reminder command, I will send you a random one.🛫`,
-            })
-            .then((res) => console.log(res.data))
-            .catch((error) => console.log(error))
+          messageData.text = `Hello there!👋\nWelcome to the Reminding Bot!🤖\nSend me some message/photo/video, I will save them, and with /get_reminder command, I will send you a random one.🛫`
+          telegramMethod = 'sendMessage'
           break
-
         case '/help':
-          await axios
-            .post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: chatID,
-              text: `Here is the list of all commands:\n/start - check if the bot is active and get recieve a greeting\n/help - see all commands\n/get_reminder - get a random reminder`,
-            })
-            .then((res) => console.log(res.data))
-            .catch((error) => console.log(error))
+          messageData.text = `Here is the list of all commands:\n/start - check if the bot is active and get recieve a greeting\n/help - see all commands\n/get_reminder - get a random reminder`
+          telegramMethod = 'sendMessage'
           break
-
         case '/get_reminder':
-          const options = ['text', 'photo', 'video']
           const allMessages = []
-          for (let i = 0; i < options.length; i++) {
-            const typeMessages = await getData('telegram', options[i])
+          for (let i = 1; i < messageTypes.length; i++) {
+            const typeMessages = await getData('telegram', messageTypes[i])
             allMessages.push(...typeMessages)
           }
+
           // const messageFromDB = await getData('telegram', collection)
           console.log('🍌🍌🍌🍌🍌🍌', allMessages)
           const randomMessage =
             allMessages[Math.floor(Math.random() * allMessages.length)]
-          const randomMessageTypeFormatedDate = new Date(
-            randomMessage.message.date * 1000
+          const randomMessageTypeFormatedDate = formatTime(
+            randomMessage.message.date
           )
-            .toString()
-            .split(' ')
-            .slice(1, 4)
-            .join(' ')
           const randomMessageType = randomMessage.type
           console.log('🍏🍏🍏🍏🍏🍏🍏GET RANDOM:', randomMessage)
+
           switch (randomMessageType) {
             case 'text':
-              await axios
-                .post(`${TELEGRAM_API}/sendMessage`, {
-                  chat_id: chatID,
-                  text: `"${randomMessage.message.text}"\n🗓  ${randomMessageTypeFormatedDate}`,
-                })
-                .then((res) => console.log(res.data))
-                .catch((error) => console.log(error))
+              messageData.text = `"${randomMessage.message.text}"\n🗓  ${randomMessageTypeFormatedDate}`
+              telegramMethod = 'sendMessage'
               break
             case 'photo':
-              await axios
-                .post(`${TELEGRAM_API}/sendPhoto`, {
-                  chat_id: chatID,
-                  photo: randomMessage.message.photo[0].file_id,
-                  caption: `🗓  ${randomMessageTypeFormatedDate}`, //caption:  "${text}"\n
-                })
-                .then((res) => console.log(res.data))
-                .catch((error) => console.log(error))
+              messageData.caption = `🗓  ${randomMessageTypeFormatedDate}`
+              messageData.photo = randomMessage.message.photo[0].file_id
+              telegramMethod = 'sendPhoto'
               break
             case 'video':
-              await axios
-                .post(`${TELEGRAM_API}/sendVideo`, {
-                  chat_id: chatID,
-                  video: randomMessage.message.video.file_id,
-                  caption: `🗓  ${randomMessageTypeFormatedDate}`, //caption:  "${text}"\n
-                })
-                .then((res) => console.log(res.data))
-                .catch((error) => console.log(error))
+              messageData.caption = `🗓  ${randomMessageTypeFormatedDate}`
+              messageData.video = randomMessage.message.video.file_id
+              telegramMethod = 'sendVideo'
               break
             default:
-              await axios
-                .post(`${TELEGRAM_API}/sendMessage`, {
-                  chat_id: chatID,
-                  text: `Else...`,
-                })
-                .then((res) => console.log(res.data))
-                .catch((error) => console.log(error))
+              messageData.text = `Unexpected data type inside /get_reminder...`
+              telegramMethod = 'sendMessage'
               break
           }
           break
 
         default:
-          await axios
-            .post(`${TELEGRAM_API}/sendMessage`, {
-              chat_id: chatID,
-              text: `Undefined command: ${text} (sry we can't do much)`,
-            })
-            .then((res) => console.log(res.data))
-            .catch((error) => console.log(error))
+          messageData.text = `Undefined command: ${text} (sry we can't do much)`
+          telegramMethod = 'sendMessage'
           break
       }
       break
     default:
       console.log('Error type!❌❌')
+      messageData.text = `Undefined message type: ${messageType} (sry we can't do much)`
+      telegramMethod = 'sendMessage'
       break
   }
 
@@ -249,63 +205,6 @@ app.post(URI, async (req, res) => {
     .then((res) => console.log(res.data))
     .catch((error) => console.log(error))
 
-  // switch (messageType) {
-  // case 'text':
-  //   await axios
-  //     .post(`${TELEGRAM_API}/sendMessage`, {
-  //       chat_id: chatID,
-  //       text: `"${dbMessage.message.text}"\n🗓  ${formatedMessageDate}`,
-  //     })
-  //     .then((res) => console.log(res.data))
-  //     .catch((error) => console.log(error))
-  //   break
-  // case 'photo':
-  //   await axios
-  //     .post(`${TELEGRAM_API}/sendPhoto`, {
-  //       chat_id: chatID,
-  //       photo: dbMessage.message.photo[0].file_id,
-  //       caption: `🗓  ${formatedMessageDate}`, //caption:  "${text}"\n
-  //     })
-  //     .then((res) => console.log(res.data))
-  //     .catch((error) => console.log(error))
-  //   break
-  // case 'video':
-  //   // console.log(req.body.message.video.file_id || undefined)
-  //   await axios
-  //     .post(`${TELEGRAM_API}/sendVideo`, {
-  //       chat_id: chatID,
-  //       video: dbMessage.message.video.file_id,
-  //       caption: `🗓  ${formatedMessageDate}`, //caption:  "${text}"\n
-  //     })
-  //     .then((res) => console.log(res.data))
-  //     .catch((error) => console.log(error))
-  //   break
-
-  //   default:
-  //     console.log('❌❌❌ Unsupported message type')
-  //     break
-  // }
-
-  // if (text !== null) {
-  //   console.log('\n-------------------\nMessage send🔝\n-------------------')
-  //   await axios
-  //     .post(`${TELEGRAM_API}/sendMessage`, {
-  //       chat_id: chatID,
-  //       text: text,
-  //     })
-  //     .then((res) => console.log(res.data))
-  //     .catch((error) => console.log(error))
-  // } else {
-  //   await axios
-  //     .post(`${TELEGRAM_API}/sendPhoto`, {
-  //       chat_id: chatID,
-  //       photo: photoFileID,
-  //       caption: caption,
-  //     })
-  //     .then((res) => console.log(res.data))
-  //     .catch((error) => console.log(error))
-  // }
-
   return res.sendStatus(200)
 })
 
@@ -313,3 +212,7 @@ app.listen(process.env.PORT || 5000, async () => {
   console.log('🍩 App is running! on port:', process.env.PORT || 5000)
   await init()
 })
+
+function formatTime(time) {
+  return new Date(time * 1000).toString().split(' ').slice(1, 4).join(' ')
+}
