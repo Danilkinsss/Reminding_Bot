@@ -55,8 +55,25 @@ app.post(URI, async (req, res) => {
   //   console.log('\t\tSuccessfull🌟')
   // }
 
+  /*
+  
+  reply_markup 	   InlineKeyboardMarkup
+  
+  */
+
   // handling message type and its' text/file
   let messageType = 'undefined'
+  if (!req.body.message) {
+    await axios
+      .post(`${TELEGRAM_API}/sendMessage`, {
+        chat_id: '300529652',
+        text: '6969',
+      })
+      .then((res) => console.log(res.data))
+      .catch((error) => console.log(error))
+
+    return res.sendStatus(200)
+  }
   let text = req.body.message.text || null
   let fileID = null
   if (text !== null) {
@@ -123,6 +140,7 @@ app.post(URI, async (req, res) => {
   console.log('\n-------------------\nMessage send🔝\n-------------------')
   let messageData = { chat_id: chatID }
   let telegramMethod
+
   switch (messageType) {
     case 'text':
       messageData.text = `"${dbMessage.message.text}"\n🗓  ${formatedMessageDate}`
@@ -147,6 +165,26 @@ app.post(URI, async (req, res) => {
         case '/help':
           messageData.text = `Here is the list of all commands:\n/start - check if the bot is active and get recieve a greeting\n/help - see all commands\n/get_reminder - get a random reminder`
           telegramMethod = 'sendMessage'
+          break
+        case '/button':
+          messageData.text = `It's a message with inline button(s) after it`
+          telegramMethod = 'sendMessage'
+          messageData.reply_markup = {
+            inline_keyboard: [
+              [
+                {
+                  text: 'A',
+                  callback_data: 'A1',
+                  url: 'http://www.google.com/',
+                },
+                {
+                  text: 'B',
+                  url: 'tg://user?id=134744986',
+                },
+              ],
+            ],
+            keyboard: [[{ text: 'oo' }]],
+          }
           break
         case '/get_reminder':
           const allMessages = []
@@ -200,6 +238,7 @@ app.post(URI, async (req, res) => {
       break
   }
 
+  console.log('🍅🍅🍅🍅🍅', messageData)
   await axios
     .post(`${TELEGRAM_API}/${telegramMethod}`, messageData)
     .then((res) => console.log(res.data))
