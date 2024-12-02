@@ -47,6 +47,7 @@ const init = async () => {
 app.post(URI, async (req, res) => {
   console.log('\n-------------------\nMessage recieved📩\n-------------------')
   console.log(req.body)
+  const messageTypes = ['command', 'text', 'photo', 'video']
 
   //TODO: not used
   // res = handler(req.body)
@@ -55,36 +56,31 @@ app.post(URI, async (req, res) => {
   // }
 
   // handling message type and its' text/file
-  let messageType = null
+  let messageType = 'undefined'
   let text = req.body.message.text || null
   let fileID = null
   if (text !== null) {
     if (text.charAt(0) === '/') {
-      messageType = 'command'
+      messageType = messageTypes[0] // command
     } else {
-      messageType = 'text'
+      messageType = messageTypes[1] // text
       fileID = text
     }
   } else {
     if (req.body.message.photo) {
-      messageType = 'photo'
+      messageType = messageTypes[2] // photo
       fileID = req.body.message.photo[0].file_unique_id
     } else if (req.body.message.video) {
-      messageType = 'video'
+      messageType = messageTypes[3] // video
       fileID = req.body.message.video.file_unique_id
     }
     text = req.body.message.caption
   }
 
   // check if dataType is supported -> TODO: fix
-  if (
-    messageType !== 'command' &&
-    messageType !== 'text' &&
-    messageType !== 'video' &&
-    messageType !== 'photo'
-  ) {
+  if (!messageTypes.includes(messageType)) {
     console.log('\n-------------------\nMessage send🔝\n-------------------')
-    console.log('type', messageType)
+    console.log('type:', messageType)
     await axios
       .post(`${TELEGRAM_API}/sendMessage`, {
         chat_id: chatID,
@@ -102,10 +98,7 @@ app.post(URI, async (req, res) => {
   let dbMessage = null
 
   // addition message data to the db
-  if (messageType === 'command') {
-    console.log('\t\t\t It is a command type')
-  } else {
-    console.log('\t\t\t Here is the type:', messageType)
+  if (messageType !== 'command') {
     dbMessage = await checkData(messageID, fileID, 'telegram', messageType)
     console.log('\t\t\t🔮🔮🔮dbMessage:\n', dbMessage)
     if (dbMessage == null) {
@@ -118,12 +111,7 @@ app.post(URI, async (req, res) => {
         })
         .then((res) => console.log(res.data))
         .catch((error) => console.log(error))
-      dbMessage = await checkData(
-        messageID + 1,
-        fileID,
-        'telegram',
-        messageType
-      )
+      dbMessage = await checkData(-1, fileID, 'telegram', messageType)
     }
     console.log('\t\t\t🔮🔮🔮dbMessage 2!:\n', dbMessage)
   }
@@ -139,36 +127,22 @@ app.post(URI, async (req, res) => {
 
   // sending  the message (as a confirmation of successful saving/finding it)
   console.log('\n-------------------\nMessage send🔝\n-------------------')
+  let messageData = { chat_id: chatID }
+  let telegramMethod
   switch (messageType) {
     case 'text':
-      await axios
-        .post(`${TELEGRAM_API}/sendMessage`, {
-          chat_id: chatID,
-          text: `"${dbMessage.message.text}"\n🗓  ${formatedMessageDate}`,
-        })
-        .then((res) => console.log(res.data))
-        .catch((error) => console.log(error))
+      messageData.text = `"${dbMessage.message.text}"\n🗓  ${formatedMessageDate}`
+      telegramMethod = 'sendMessage'
       break
     case 'photo':
-      await axios
-        .post(`${TELEGRAM_API}/sendPhoto`, {
-          chat_id: chatID,
-          photo: dbMessage.message.photo[0].file_id,
-          caption: `🗓  ${formatedMessageDate}`, //caption:  "${text}"\n
-        })
-        .then((res) => console.log(res.data))
-        .catch((error) => console.log(error))
+      messageData.caption = `🗓  ${formatedMessageDate}` //caption:  "${text}"\n
+      messageData.photo = dbMessage.message.photo[0].file_id
+      telegramMethod = 'sendPhoto'
       break
     case 'video':
-      // console.log(req.body.message.video.file_id || undefined)
-      await axios
-        .post(`${TELEGRAM_API}/sendVideo`, {
-          chat_id: chatID,
-          video: dbMessage.message.video.file_id,
-          caption: `🗓  ${formatedMessageDate}`, //caption:  "${text}"\n
-        })
-        .then((res) => console.log(res.data))
-        .catch((error) => console.log(error))
+      messageData.caption = `🗓  ${formatedMessageDate}` //caption:  "${text}"\n
+      messageData.video = dbMessage.message.video.file_id
+      telegramMethod = 'sendVideo'
       break
     case 'command':
       switch (text) {
@@ -266,9 +240,51 @@ app.post(URI, async (req, res) => {
       }
       break
     default:
-      console.log('❌❌❌ Unsupported message type')
+      console.log('Error type!❌❌')
       break
   }
+
+  await axios
+    .post(`${TELEGRAM_API}/${telegramMethod}`, messageData)
+    .then((res) => console.log(res.data))
+    .catch((error) => console.log(error))
+
+  // switch (messageType) {
+  // case 'text':
+  //   await axios
+  //     .post(`${TELEGRAM_API}/sendMessage`, {
+  //       chat_id: chatID,
+  //       text: `"${dbMessage.message.text}"\n🗓  ${formatedMessageDate}`,
+  //     })
+  //     .then((res) => console.log(res.data))
+  //     .catch((error) => console.log(error))
+  //   break
+  // case 'photo':
+  //   await axios
+  //     .post(`${TELEGRAM_API}/sendPhoto`, {
+  //       chat_id: chatID,
+  //       photo: dbMessage.message.photo[0].file_id,
+  //       caption: `🗓  ${formatedMessageDate}`, //caption:  "${text}"\n
+  //     })
+  //     .then((res) => console.log(res.data))
+  //     .catch((error) => console.log(error))
+  //   break
+  // case 'video':
+  //   // console.log(req.body.message.video.file_id || undefined)
+  //   await axios
+  //     .post(`${TELEGRAM_API}/sendVideo`, {
+  //       chat_id: chatID,
+  //       video: dbMessage.message.video.file_id,
+  //       caption: `🗓  ${formatedMessageDate}`, //caption:  "${text}"\n
+  //     })
+  //     .then((res) => console.log(res.data))
+  //     .catch((error) => console.log(error))
+  //   break
+
+  //   default:
+  //     console.log('❌❌❌ Unsupported message type')
+  //     break
+  // }
 
   // if (text !== null) {
   //   console.log('\n-------------------\nMessage send🔝\n-------------------')

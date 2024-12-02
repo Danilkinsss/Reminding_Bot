@@ -19,8 +19,6 @@ function checkData(msgID, msgTextOrFile, dbName, colName) {
     try {
       // Connect to the Atlas cluster
       await client.connect()
-      // AQADBOkxG7DTwUh4
-      // AQADBOkxG7DTwUh4
 
       // Get the database and collection on which to run the operation
       const db = client.db(dbName)
@@ -37,9 +35,14 @@ function checkData(msgID, msgTextOrFile, dbName, colName) {
           'message.message_id': { $not: { $eq: msgID } },
         }
         console.log('--------hereeeeeeee', msgTextOrFile)
-      } else {
+      } else if (colName === 'video') {
         filter = {
           'message.video.file_unique_id': { $eq: msgTextOrFile },
+          'message.message_id': { $not: { $eq: msgID } },
+        }
+      } else {
+        filter = {
+          'message.check-for-data-error...': { $eq: msgTextOrFile },
           'message.message_id': { $not: { $eq: msgID } },
         }
       }

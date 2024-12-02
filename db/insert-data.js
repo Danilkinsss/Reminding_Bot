@@ -1,7 +1,7 @@
 // node insert-data.js
 //
 //
-function insertData(objsArr, dbName, colName) {
+function insertData(mesObj, dbName, colName) {
   const { MongoClient } = require('mongodb')
 
   require('dotenv').config()
@@ -20,24 +20,11 @@ function insertData(objsArr, dbName, colName) {
       const db = client.db(dbName)
       const col = db.collection(colName)
 
-      // Create new documents
-      console.log('🐛🐛🐛🐛', objsArr)
-      objsArr.type = colName
-      console.log('🐛🐛🐛🐛🐛🐛🐛🐛', objsArr)
-      let collectionDocument = [objsArr]
-      console.log('😻😻😻😻😻😻', collectionDocument)
-      // const collectionDocument = [...objsArr, colName]
+      // Add a type to a document
+      mesObj.type = colName
 
-      // Insert the documents into the specified collection
-      const p = await col.insertMany(collectionDocument)
-
-      // Find the document
-      //TODO: check if needed ↓↓↓
-      const filter = { 'message.from.username': 'danilkinsss' }
-      const document = await col.findOne(filter)
-
-      // Print results
-      console.log('Some file from danilkinsss:\n' + JSON.stringify(document))
+      // Insert the document into the specified collection
+      const p = await col.insertOne(mesObj)
     } catch (err) {
       console.log(err.stack)
     } finally {
