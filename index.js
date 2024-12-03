@@ -285,10 +285,81 @@ app.post(URI, async (req, res) => {
   }
 
   console.log('🍅🍅🍅🍅🍅', messageData)
+  // reply_markup: {
+  //   remove_keyboard: true,
+  // keyboard: [['yes']],
+  // resize_keyboard: true,
+  // one_time_keyboard: true,
+  // is_persistent: true,
+  //
+  // inline_keyboard: [
+  //   [
+  //     {
+  //       text: 'A',
+  //       url: 'http://www.google.com/',
+  //     },
+  //     {
+  //       text: 'B',
+  //       url: 'tg://user?id=134744986',
+  //     },
+  //     {
+  //       text: 'C',
+  //       copy_text: { text: 'sasi da' },
+  //     },
+  //   ],
+  // ],
+  // },
+  messageData.reply_markup = {
+    inline_keyboard: [
+      [
+        {
+          text: 'Button 1',
+          // url: 'http://www.google.com/',
+          callback_data: 'clicked',
+          // copy_text: { text: 'sasi da' },
+        },
+      ],
+    ],
+  }
   await axios
     .post(`${TELEGRAM_API}/${telegramMethod}`, messageData)
     .then((res) => console.log(res.data))
     .catch((error) => console.log(error))
+
+  // const queryID = 69
+  // const answerCallbackQueryObject = {
+  //   query: queryID,
+  //   text: `You successfully clicked the button`,
+  // }
+
+  const answerCallbackQueryData = {
+    chat_id: chatID,
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: 'Button 2',
+            // url: 'http://www.google.com/',
+            callback_data: 'clicked',
+            copy_text: { text: 'sasi da' },
+          },
+        ],
+      ],
+    },
+  }
+  await axios
+    .post(`${TELEGRAM_API}/editMessageReplyMarkup`, answerCallbackQueryData)
+    .then((res) => console.log(res.data))
+    .catch((error) => console.log(error))
+  // const answerCallbackQueryData = {
+  //   callback_query_id: 'clicked',
+  //   text: 'skibidi',
+  //   show_alert: true,
+  // }
+  // await axios
+  //   .post(`${TELEGRAM_API}/answerCallbackQuery`, answerCallbackQueryData)
+  //   .then((res) => console.log(res.data))
+  //   .catch((error) => console.log(error))
 
   return res.sendStatus(200)
 })
