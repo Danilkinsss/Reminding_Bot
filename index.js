@@ -169,22 +169,68 @@ app.post(URI, async (req, res) => {
         case '/button':
           messageData.text = `It's a message with inline button(s) after it`
           telegramMethod = 'sendMessage'
-          messageData.reply_markup = {
-            inline_keyboard: [
-              [
-                {
-                  text: 'A',
-                  callback_data: 'A1',
-                  url: 'http://www.google.com/',
-                },
-                {
-                  text: 'B',
-                  url: 'tg://user?id=134744986',
-                },
-              ],
-            ],
-            keyboard: [[{ text: 'oo' }]],
+          messageData = {
+            chat_id: chatID,
+            text: 'ololo',
+            reply_markup: {
+              remove_keyboard: true,
+              // keyboard: [['yes']],
+              // resize_keyboard: true,
+              // one_time_keyboard: true,
+              // is_persistent: true,
+              //
+              // inline_keyboard: [
+              //   [
+              //     {
+              //       text: 'A',
+              //       url: 'http://www.google.com/',
+              //     },
+              //     {
+              //       text: 'B',
+              //       url: 'tg://user?id=134744986',
+              //     },
+              //     {
+              //       text: 'C',
+              //       copy_text: { text: 'sasi da' },
+              //     },
+              //   ],
+              // ],
+            },
+            // {
+            // inline_keyboard: [
+            //   [
+            //     {
+            //       text: 'A',
+            //       callback_data: 'A1',
+            //       url: 'http://www.google.com/',
+            //     },
+            //     {
+            //       text: 'B',
+            //       url: 'tg://user?id=134744986',
+            //     },
+            //   ],
+            // ],
+            // keyboard: [[]],
+            // },
           }
+
+          /*
+          const keyboard = {
+            reply_markup: {
+              inline_keyboard: [[{ text: '', callback_data: '' }]],
+            },
+          }
+
+          bot.editMessageReplyMarkup(keyboard, {
+            chat_id: msg.message.chat.id,
+            message_id: msg.message.message_id,
+          })
+          */
+          // await axios
+          //   .post(`${TELEGRAM_API}/sendMessage`, replyData)
+          //   .then((res) => console.log(res.data))
+          //   .catch((error) => console.log(error))
+          // return 201
           break
         case '/get_reminder':
           const allMessages = []
