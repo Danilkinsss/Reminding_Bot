@@ -2,9 +2,8 @@ name: Daily Commit
 
 on:
   schedule:
-    # - cron: '0 10 * * *' # every day at 10:00 UTC
-    - cron: '*/5 * * * *' # every 5 mins for testing
-  workflow_dispatch: # manual trigger
+    - cron: '0 10 * * *'
+  workflow_dispatch:
 
 jobs:
   commit:
@@ -23,4 +22,5 @@ jobs:
           git config --global user.email "danil.kzn2003@gmail.com"
           git add logs.txt
           git commit -m "Daily: $(date)" || echo "No changes to commit"
+          git log -1 --pretty=format:'Author: %an <%ae>'
           git push https://x-access-token:${{ secrets.GH_PAT }}@github.com/Danilkinsss/Reminding_Bot.git HEAD:main
