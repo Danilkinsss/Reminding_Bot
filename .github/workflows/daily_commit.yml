@@ -27,4 +27,4 @@ jobs:
 
       - name: Set remote with token
         run: |
-          git remote set-url origin https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}
+          git remote set-url origin https://x-access-token:${{ secrets.GH_PAT }}@github.com/Danilkinsss/Reminding_Bot.git
