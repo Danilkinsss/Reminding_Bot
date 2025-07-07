@@ -12,8 +12,8 @@ const { checkData } = require('./db/check-for-data.js')
 // TODO: not used
 const { handleMessage } = require('./controller/lib/telegram.js')
 const { handler } = require('./controller/index.js')
-const { deleteMessage } = require('./delete-msg.js')
 const { getData } = require('./db/get-data.js')
+const { deleteData } = require('./db/delete-data.js')
 
 const { TOKEN, SERVER_URL } = process.env
 const TELEGRAM_API = `https://api.telegram.org/bot${TOKEN}`
@@ -43,6 +43,8 @@ const init = async () => {
 
 
 */
+let previousType
+let previousID
 
 app.post(URI, async (req, res) => {
   console.log('\n-------------------\nMessage recieved📩\n-------------------')
@@ -165,6 +167,15 @@ app.post(URI, async (req, res) => {
         case '/help':
           messageData.text = `Here is the list of all commands:\n/start - check if the bot is active and get recieve a greeting\n/help - see all commands\n/get_reminder - get a random reminder`
           telegramMethod = 'sendMessage'
+          break
+        case '/delete':
+          //TODO: finish deleteData method
+          if (previousType !== undefined && previousID !== undefined) {
+            await deleteData('telegram', previousType, previousID)
+          } else {
+            console.log('User tried to delete unsupported message')
+          }
+
           break
         case '/button':
           messageData.text = `It's a message with inline button(s) after it`
@@ -309,18 +320,18 @@ app.post(URI, async (req, res) => {
   //   ],
   // ],
   // },
-  messageData.reply_markup = {
-    inline_keyboard: [
-      [
-        {
-          text: 'Button 1',
-          // url: 'http://www.google.com/',
-          callback_data: 'clicked',
-          // copy_text: { text: 'sasi da' },
-        },
-      ],
-    ],
-  }
+  // messageData.reply_markup = {
+  //   inline_keyboard: [
+  //     [
+  //       {
+  //         text: 'Button 1',
+  //         // url: 'http://www.google.com/',
+  //         callback_data: 'clicked',
+  //         // copy_text: { text: 'sasi da' },
+  //       },
+  //     ],
+  //   ],
+  // }
   await axios
     .post(`${TELEGRAM_API}/${telegramMethod}`, messageData)
     .then((res) => console.log(res.data))
@@ -332,25 +343,26 @@ app.post(URI, async (req, res) => {
   //   text: `You successfully clicked the button`,
   // }
 
-  const answerCallbackQueryData = {
-    chat_id: chatID,
-    reply_markup: {
-      inline_keyboard: [
-        [
-          {
-            text: 'Button 2',
-            // url: 'http://www.google.com/',
-            callback_data: 'clicked',
-            copy_text: { text: 'sasi da' },
-          },
-        ],
-      ],
-    },
-  }
-  await axios
-    .post(`${TELEGRAM_API}/editMessageReplyMarkup`, answerCallbackQueryData)
-    .then((res) => console.log(res.data))
-    .catch((error) => console.log(error))
+  // const answerCallbackQueryData = {
+  //   chat_id: chatID,
+  //   reply_markup: {
+  //     inline_keyboard: [
+  //       [
+  //         {
+  //           text: 'Button 2',
+  //           // url: 'http://www.google.com/',
+  //           // callback_data: 'clicked',
+  //           copy_text: { text: 'sasi da' },
+  //         },
+  //       ],
+  //     ],
+  //   },
+  // }
+  // await axios
+  //   .post(`${TELEGRAM_API}/editMessageReplyMarkup`, answerCallbackQueryData)
+  //   .then((res) => console.log(res.data))
+  //   .catch((error) => console.log(error))
+
   // const answerCallbackQueryData = {
   //   callback_query_id: 'clicked',
   //   text: 'skibidi',
@@ -360,6 +372,11 @@ app.post(URI, async (req, res) => {
   //   .post(`${TELEGRAM_API}/answerCallbackQuery`, answerCallbackQueryData)
   //   .then((res) => console.log(res.data))
   //   .catch((error) => console.log(error))
+  console.log('🍍🍍🍍🍍🍍🍍🍍', previousType, previousID)
+  console.log('🍌🍌🍌🍌', dbMessage.type)
+  previousType = dbMessage.type || null
+  previousID = dbMessage._id
+  console.log('🍍🍍🍍🍍🍍🍍🍍', previousType, previousID)
 
   return res.sendStatus(200)
 })
