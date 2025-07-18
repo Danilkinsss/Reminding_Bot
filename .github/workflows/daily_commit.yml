@@ -2,7 +2,8 @@ name: Daily Commit
 
 on:
   schedule:
-    - cron: '0 10 * * *'
+    # Runs hourly from 10:00 to 19:00 CET weekdays only
+    - cron: '0 9-18 * * 1-5' # 10–19 CET = 9–18 UTC
   workflow_dispatch:
 
 jobs:
@@ -17,10 +18,37 @@ jobs:
         with:
           token: ${{ secrets.GH_PAT }}
 
-      - name: Make daily commit
-        env:
-          TZ: UTC
+      - name: Check if we should commit
+        id: should_commit
         run: |
+          # Check what we should do
+          if RESULT=$(node .github/scripts/shouldRun.js); then
+            echo "action=$RESULT" >> $GITHUB_OUTPUT
+          else
+            echo "Script failed, defaulting to skip"
+            echo "action=skip_hour" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Exit if day is skipped
+        if: steps.should_commit.outputs.action == 'skip_day'
+        run: echo "🚫 Skipping today entirely"
+
+      - name: Exit if not the chosen hour
+        if: steps.should_commit.outputs.action == 'skip_hour'
+        run: echo "🚫 Not the chosen hour for today"
+
+      - name: Add random delay and commit
+        if: steps.should_commit.outputs.action == 'commit_with_delay'
+        env:
+          TZ: Europe/Paris
+        run: |
+          # Create deterministic but random delay based on date (0-3599 seconds = 0-59 minutes)
+          DATE_SEED=$(date -u +%Y%m%d)
+          DELAY=$(( (0x$(echo -n "delay-$DATE_SEED" | sha256sum | cut -c1-8) % 3600) ))
+          echo "⏱️  Random delay for today: ${DELAY} seconds (~$(($DELAY / 60)) minutes)"
+          sleep $DELAY
+
+          # Make the commit
           echo "✅ Daily update on $(date)" >> logs.txt
           git config --global user.name "Danilkinsss"
           git config --global user.email "danil.kzn2003@gmail.com"
