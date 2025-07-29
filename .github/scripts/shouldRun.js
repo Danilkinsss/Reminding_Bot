@@ -6,6 +6,27 @@ const weekday = now.getUTCDay() // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
 const utcDate = now.toISOString().slice(0, 10) // YYYY-MM-DD in UTC
 const currentHour = now.getUTCHours()
 
+// === Vacation dates ===
+const vacationDates = [
+  '2025-07-30',
+  '2025-07-31',
+  '2025-08-01',
+  '2025-08-02',
+  '2025-08-03',
+  '2025-08-13',
+  '2025-08-14',
+  '2025-08-15',
+  '2025-08-16',
+  '2025-08-17',
+  '2025-08-18',
+]
+
+// Skip if it's a vacation day
+if (vacationDates.includes(utcDate)) {
+  console.log('skip_day') // skip vacation day
+  process.exit(0)
+}
+
 // === Biased skip probabilities ===
 // Monday and Friday have higher chance to skip
 const skipChances = {
