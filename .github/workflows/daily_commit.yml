@@ -16,7 +16,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GH_PAT }}
+          persist-credentials: true
 
       - name: Check if we should commit
         id: should_commit
@@ -50,8 +50,8 @@ jobs:
 
           # Make the commit
           echo "✅ Daily update on $(date)" >> logs.txt
-          git config --global user.name "Danilkinsss"
-          git config --global user.email "danil.kzn2003@gmail.com"
+          git config user.name "Danilkinsss"
+          git config user.email "danil.kzn2003@gmail.com"
           git add logs.txt
           git commit -m "Daily: $(date)" || echo "No changes to commit"
-          git push origin main
+          git push origin main HEAD:main
