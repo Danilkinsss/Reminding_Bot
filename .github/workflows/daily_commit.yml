@@ -50,8 +50,10 @@ jobs:
 
           # Make the commit
           echo "✅ Daily update on $(date)" >> logs.txt
+
           git config user.name "Danilkinsss"
           git config user.email "danil.kzn2003@gmail.com"
           git add logs.txt
           git commit -m "Daily: $(date)" || echo "No changes to commit"
-          git push origin main HEAD:main
+          git diff --cached --quiet && exit 0
+          git push

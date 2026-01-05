@@ -6,6 +6,12 @@ const weekday = now.getUTCDay() // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
 const utcDate = now.toISOString().slice(0, 10) // YYYY-MM-DD in UTC
 const currentHour = now.getUTCHours()
 
+// === Weekends ===
+if (weekday === 0 || weekday === 6) {
+  console.log('skip_day')
+  process.exit(0)
+}
+
 // === Vacation dates ===
 const vacationDates = [
   '2025-07-30',
