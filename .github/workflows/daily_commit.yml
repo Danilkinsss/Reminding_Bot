@@ -41,19 +41,23 @@ jobs:
         if: steps.should_commit.outputs.action == 'commit_with_delay'
         env:
           TZ: Europe/Paris
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Create deterministic but random delay based on date (0-3599 seconds = 0-59 minutes)
           DATE_SEED=$(date -u +%Y%m%d)
           DELAY=$(( (0x$(echo -n "delay-$DATE_SEED" | sha256sum | cut -c1-8) % 3600) ))
-          echo "⏱️  Random delay for today: ${DELAY} seconds (~$(($DELAY / 60)) minutes)"
+          echo "⏱️ Random delay: ${DELAY}s"
           sleep $DELAY
 
-          # Make the commit
-          echo "✅ Daily update on $(date)" >> logs.txt
+          TODAY=$(date -u +%Y-%m-%d)
+
+          echo "✅ Daily update on $TODAY" >> logs.txt
 
           git config user.name "Danilkinsss"
           git config user.email "danil.kzn2003@gmail.com"
+
           git add logs.txt
-          git commit -m "Daily: $(date)" || echo "No changes to commit"
           git diff --cached --quiet && exit 0
-          git push
+          git commit -m "Daily: $TODAY"
+
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
+          git push origin main
