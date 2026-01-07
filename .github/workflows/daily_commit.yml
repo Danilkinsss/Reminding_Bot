@@ -21,12 +21,15 @@ jobs:
       - name: Check if we should commit
         id: should_commit
         run: |
-          # Check what we should do
-          if RESULT=$(node .github/scripts/shouldRun.js); then
-            echo "action=$RESULT" >> $GITHUB_OUTPUT
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "action=commit_with_delay" >> $GITHUB_OUTPUT
+            echo "🧪 Manual run detected — forcing commit"
           else
-            echo "Script failed, defaulting to skip"
-            echo "action=skip_hour" >> $GITHUB_OUTPUT
+            if RESULT=$(node .github/scripts/shouldRun.js); then
+              echo "action=$RESULT" >> $GITHUB_OUTPUT
+            else
+              echo "action=skip_hour" >> $GITHUB_OUTPUT
+            fi
           fi
 
       - name: Exit if day is skipped
