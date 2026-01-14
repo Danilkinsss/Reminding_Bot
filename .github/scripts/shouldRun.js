@@ -61,7 +61,7 @@ const workingHours = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
 const chosenHour = workingHours[Math.floor(timeRandom * workingHours.length)]
 
 // === Step 3: Check if it's time to commit ===
-if (currentHour === chosenHour) {
+if (currentHour >= chosenHour) {
   console.log('commit_with_delay') // time to commit with random delay!
 } else {
   console.log('skip_hour') // not time yet, skip this run
