@@ -54,7 +54,17 @@ jobs:
 
           TODAY=$(date -u +%Y-%m-%d)
 
+          # ---- GUARD: already committed today? ----
+          if [ -f .last_daily_commit ] && grep -q "$TODAY" .last_daily_commit; then
+            echo "🛑 Commit already done today ($TODAY)"
+            exit 0
+          fi
+
           echo "✅ Daily update on $TODAY" >> logs.txt
+
+          # ---- WRITE STATE ----
+
+          echo "$TODAY" > .last_daily_commit
 
           git config user.name "Danilkinsss"
           git config user.email "danil.kzn2003@gmail.com"
