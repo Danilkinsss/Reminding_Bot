@@ -55,7 +55,7 @@ jobs:
           TODAY=$(date -u +%Y-%m-%d)
 
           # ---- GUARD: already committed today? ----
-          if [ -f .last_daily_commit ] && grep -q "$TODAY" .last_daily_commit; then
+          if [ -s .last_daily_commit ] && grep -qx "$TODAY" .last_daily_commit; then
             echo "🛑 Commit already done today ($TODAY)"
             exit 0
           fi
