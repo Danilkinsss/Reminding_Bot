@@ -26,11 +26,8 @@ jobs:
             echo "action=commit_with_delay" >> $GITHUB_OUTPUT
             echo "🧪 Manual run detected — forcing commit"
           else
-            if RESULT=$(node .github/scripts/shouldRun.js); then
-              echo "action=$RESULT" >> $GITHUB_OUTPUT
-            else
-              echo "action=skip_hour" >> $GITHUB_OUTPUT
-            fi
+            RESULT=$(node .github/scripts/shouldRun.js)
+            echo "action=$RESULT" >> $GITHUB_OUTPUT
           fi
 
       - name: Exit if day is skipped
@@ -41,30 +38,29 @@ jobs:
         if: steps.should_commit.outputs.action == 'skip_hour'
         run: echo "🚫 Not the chosen hour for today"
 
-      - name: Add random delay and commit
+      - name: Perform daily commit(if needed)
         if: steps.should_commit.outputs.action == 'commit_with_delay'
         env:
           TZ: Europe/Paris
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          TODAY=$(date -u +%Y-%m-%d)  
+
+          # ---- GUARD: already committed today? ----
+          if git log --since="00:00" --until="23:59" --pretty=format:%s | grep -qx "Daily: $TODAY"; then
+            echo "🛑 Commit already exists for today ($TODAY)"
+            exit 0
+          fi
+
+          # ---- RANDOM DELAY ----
           DATE_SEED=$(date -u +%Y%m%d)
           DELAY=$(( (0x$(echo -n "delay-$DATE_SEED" | sha256sum | cut -c1-8) % 3600) ))
           echo "⏱️ Random delay: ${DELAY}s"
           sleep $DELAY
 
-          TODAY=$(date -u +%Y-%m-%d)
 
-          # ---- GUARD: already committed today? ----
-          if [ -s .last_daily_commit ] && grep -qx "$TODAY" .last_daily_commit; then
-            echo "🛑 Commit already done today ($TODAY)"
-            exit 0
-          fi
-
+          # ---- COMMIT ----
           echo "✅ Daily update on $TODAY" >> logs.txt
-
-          # ---- WRITE STATE ----
-
-          echo "$TODAY" > .last_daily_commit
 
           git config user.name "Danilkinsss"
           git config user.email "danil.kzn2003@gmail.com"
@@ -73,5 +69,4 @@ jobs:
           git diff --cached --quiet && exit 0
           git commit -m "Daily: $TODAY"
 
-          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
           git push origin main
