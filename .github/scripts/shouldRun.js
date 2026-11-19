@@ -1,14 +1,23 @@
 // .github/scripts/shouldRun.js
 const crypto = require('crypto')
+const fs = require('fs')
 
 const now = new Date()
 const weekday = now.getUTCDay() // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
 const utcDate = now.toISOString().slice(0, 10) // YYYY-MM-DD in UTC
 const currentHour = now.getUTCHours()
 
+// Write the decision to the workflow (step outputs) and the run log.
+function emit(action) {
+  if (process.env.GITHUB_OUTPUT) {
+    fs.appendFileSync(process.env.GITHUB_OUTPUT, `action=${action}\n`)
+  }
+  console.log(action)
+}
+
 // === Weekends ===
 if (weekday === 0 || weekday === 6) {
-  console.log('skip_day')
+  emit('skip_day')
   process.exit(0)
 }
 
@@ -29,7 +38,7 @@ const vacationDates = [
 
 // Skip if it's a vacation day
 if (vacationDates.includes(utcDate)) {
-  console.log('skip_day') // skip vacation day
+  emit('skip_day') // skip vacation day
   process.exit(0)
 }
 
@@ -41,28 +50,32 @@ const skipChances = {
   default: 0.15, // Other weekdays
 }
 
-// Generate hash-based pseudo-random numbers using UTC date
+// Generate hash-based pseudo-random numbers using UTC date (stable all day)
 const seed = `commit-${utcDate}`
 const hash = crypto.createHash('sha256').update(seed).digest('hex')
 
-// Use different parts of the hash for different random decisions
 const skipRandom = parseInt(hash.slice(0, 8), 16) / 0xffffffff // 0–1
 const timeRandom = parseInt(hash.slice(8, 16), 16) / 0xffffffff // 0–1
 
-// === Step 1: Check if today should be skipped ===
+// === Step 1: Should today be skipped entirely? ===
 const threshold = skipChances[weekday] ?? skipChances.default
 if (skipRandom < threshold) {
-  console.log('skip_day') // skip today entirely
+  emit('skip_day')
   process.exit(0)
 }
 
-// === Step 2: Pick random hour for today (9-18 UTC = 10-19 CET) ===
-const workingHours = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
-const chosenHour = workingHours[Math.floor(timeRandom * workingHours.length)]
+// === Step 2: Pick a random hour for today ===
+// Picks WHICH scheduled run performs the commit — no sleeping, no delay.
+// MUST match the cron hours in daily_commit.yml (09/13/17 UTC) so the chosen
+// hour always has a scheduled run to catch it. The commit lands at that hour's
+// natural run time, giving free day-to-day variation.
+const workingHours = [9, 13, 17]
+const chosenHour =
+  workingHours[Math.min(workingHours.length - 1, Math.floor(timeRandom * workingHours.length))]
 
-// === Step 3: Check if it's time to commit ===
+// === Step 3: Commit on the first scheduled run at/after the chosen hour ===
 if (currentHour >= chosenHour) {
-  console.log('commit_with_delay') // time to commit with random delay!
+  emit('commit')
 } else {
-  console.log('skip_hour') // not time yet, skip this run
+  emit('skip_hour')
 }

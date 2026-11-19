@@ -3,8 +3,8 @@ name: Daily Commit
 
 on:
   schedule:
-    # Runs hourly from 10:00 to 19:00 CET weekdays only
-    - cron: '0 9-18 * * 1-5' # 10–19 CET = 9–18 UTC
+    # Runs 3× per weekday at 10:00 / 14:00 / 18:00 CET
+    - cron: '0 9,13,17 * * 1-5' # 09/13/17 UTC = 10/14/18 CET
   workflow_dispatch:
 
 jobs:
@@ -23,11 +23,11 @@ jobs:
         id: should_commit
         run: |
           if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
-            echo "action=commit_with_delay" >> $GITHUB_OUTPUT
+            echo "action=commit" >> $GITHUB_OUTPUT
             echo "🧪 Manual run detected — forcing commit"
           else
-            RESULT=$(node .github/scripts/shouldRun.js)
-            echo "action=$RESULT" >> $GITHUB_OUTPUT
+            # shouldRun.js writes action= (skip_day | skip_hour | commit) to $GITHUB_OUTPUT
+            node .github/scripts/shouldRun.js
           fi
 
       - name: Exit if day is skipped
@@ -39,27 +39,19 @@ jobs:
         run: echo "🚫 Not the chosen hour for today"
 
       - name: Perform daily commit(if needed)
-        if: steps.should_commit.outputs.action == 'commit_with_delay'
+        if: steps.should_commit.outputs.action == 'commit'
         env:
           TZ: Europe/Paris
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TODAY=$(date -u +%Y-%m-%d)  
+          TODAY=$(date +%Y-%m-%d)
 
           # ---- GUARD: already committed today? ----
-          if git log --since="00:00" --until="23:59" --pretty=format:%s | grep -qx "Daily: $TODAY"; then
+          if git log --since="00:00" --pretty=format:%s | grep -qx "Daily: $TODAY"; then
             echo "🛑 Commit already exists for today ($TODAY)"
             exit 0
           fi
 
-          # ---- RANDOM DELAY ----
-          DATE_SEED=$(date -u +%Y%m%d)
-          DELAY=$(( (0x$(echo -n "delay-$DATE_SEED" | sha256sum | cut -c1-8) % 3600) ))
-          echo "⏱️ Random delay: ${DELAY}s"
-          sleep $DELAY
-
-
-          # ---- COMMIT ----
+          # ---- COMMIT (no sleep, no stamping — commit takes its natural run time) ----
           echo "✅ Daily update on $TODAY" >> logs.txt
 
           git config user.name "Danilkinsss"
